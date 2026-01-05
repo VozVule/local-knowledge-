@@ -41,3 +41,20 @@ class ChatMessage(db.Model):
             "message": self.message,
             "timestamp": self.timestamp.isoformat(),
         }
+
+
+class AppConfig(db.Model):
+    __tablename__ = "app_config"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    provider = db.Column(db.String(64), nullable=False)
+    model_name = db.Column(db.String(128), nullable=False)
+    model_type = db.Column(db.String(32), nullable=False)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "provider": self.provider,
+            "model_name": self.model_name,
+            "model_type": self.model_type,
+        }

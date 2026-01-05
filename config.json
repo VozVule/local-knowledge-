@@ -1,0 +1,16 @@
+{
+  "providers": {
+    "ollama": {
+      "models": [
+        {
+          "name": "llama3.2:3b",
+          "type": "chat"
+        }
+      ]
+    }
+  },
+  "default": {
+    "provider": "ollama",
+    "model": "llama3.2:3b"
+  }
+}
