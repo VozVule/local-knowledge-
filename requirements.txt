@@ -11,3 +11,4 @@ python-dotenv==1.0.1
 SQLAlchemy==2.0.38
 Werkzeug==3.1.4
 zipp==3.23.0
+ollama==0.6.1

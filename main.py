@@ -7,7 +7,8 @@ from dotenv import load_dotenv
 from flask import Flask, jsonify, request
 from flask_migrate import Migrate
 from sqlalchemy.exc import SQLAlchemyError
-
+from llm.adapters.ollama import OllamaAdapter
+from llm.service import LLMService
 from models import ChatMessage, Sender, db
 
 
@@ -24,6 +25,15 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db.init_app(app)
 migrate = Migrate(app, db)
 
+### This is only for local dev iteration purposes.
+ollama_adapter = OllamaAdapter(
+    base_url="???",
+    chat_model="llama3.2:3b",
+    embedding_model="nomic-embed-text:latest"
+)
+
+llm_service = LLMService(adapter=ollama_adapter)
+### End local dev setup.
 
 @app.post("/api/chat")
 def send_chat_message():
@@ -45,18 +55,31 @@ def send_chat_message():
             return jsonify({"error": "session not found"}), 404
     else:
         session_id = uuid.uuid4().hex
+        # also need to inject a system prompt
+        system_prompt = ChatMessage(
+            session_id=session_id,
+            sender = Sender.SYSTEM,
+            message = "You are a helpful personal assistant. Answer the user's questions as best as you can." \
+            "If you don't know the answer just say you don't know. You will be provided with personalized context from RAG techniques." \
+            "Use that context to help yourself create better answers. And always preffeer that context over your own knowledge." \
+            "Be realistic and not too suggar coated in the way you answer questions."
+        )
+        try:
+            db.session.add(system_prompt)
+            db.session.commit()
+        except SQLAlchemyError as exc:
+            db.session.rollback()
+            return jsonify({"error": "failed to create session", "details": str(exc)}), 500
 
+    # retrieve and package the full session chat history and send to LLM 
+    messages = get_chat_for_session(session_id)
     record = ChatMessage(session_id=session_id, sender=Sender.USER, message=message)
-    # send out the session to the LLM-api (needs to be implemented at some point)
-    reply_text = f"Placeholder for a reply: {message}"
-    assistant_record = ChatMessage(
-        session_id=session_id,
-        sender=Sender.ASSISTANT,
-        message=reply_text,
-    )
+    messages.append(record)
+    reply_message = llm_service.chat(messages=messages)
+
     try:
         db.session.add(record)
-        db.session.add(assistant_record)
+        db.session.add(reply_message)
         db.session.commit()
     except SQLAlchemyError as exc:
         db.session.rollback()
@@ -64,23 +87,26 @@ def send_chat_message():
 
     response = {
         "session_id": session_id,
-        "reply": reply_text,
+        "reply": reply_message.message,
     }
     return jsonify(response)
 
 
 @app.get("/api/chat/<session_id>")
 def get_chat_history(session_id):
-    messages = (
-        ChatMessage.query.filter_by(session_id=session_id)
-        .order_by(ChatMessage.timestamp.asc())
-        .all()
-    )
+    messages = get_chat_for_session(session_id)
     if not messages:
         return jsonify({"error": "session not found"}), 404
     serialized = [message.to_dict() for message in messages]
     return jsonify({"session_id": session_id, "messages": serialized})
 
+
+def get_chat_for_session(session_id: str) -> list[ChatMessage]:
+    return (
+        ChatMessage.query.filter_by(session_id=session_id)
+        .order_by(ChatMessage.timestamp.asc())
+        .all()
+    )
 
 @app.route("/")
 def index():

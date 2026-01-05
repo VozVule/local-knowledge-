@@ -14,6 +14,7 @@ db = SQLAlchemy()
 class Sender(str, Enum):
     USER = "user"
     ASSISTANT = "assistant"
+    SYSTEM = "system"
 
 
 def _utcnow() -> datetime:
