@@ -146,6 +146,7 @@ def send_chat_message():
         reply_message = llm_service.chat(messages=messages)
     except LLMError as exc:
         app.logger.error("LLM chat failed for session %s: %s", session_id, exc)
+        # TODO: Decide whether to persist the user message even when the LLM call fails.
         return jsonify({"error": "llm_unavailable", "message": "The language model is unavailable."}), 502
 
     try:

@@ -2,36 +2,34 @@
 
 ## Overview
 
-LocKno is a side project aimed at building an environment where a local or cloud-hosted LLM can safely and selectively access user-approved documents on the local machine in order to provide more accurate answers.
+LocKno is a lightweight chat backend that exposes a simple HTTP API, persists
+conversation history, and talks to local or remote LLMs through pluggable
+adapters. The current implementation ships with an Ollama adapter so you can
+spin up a chat experience immediately while leaving room to grow into RAG flows
+or other providers later on.
 
-The system uses Retrieval-Augmented Generation (RAG) to ground model responses in verified, user-supplied data rather than relying solely on the model’s pretrained knowledge.
+## Features
 
-## Contents of the project
+- Chat API (`POST /api/chat`, `GET /api/chat/<session_id>`) that tracks
+  per-session histories and seeds a default system prompt.
+- Config endpoints (`/api/config/llm`) backed by a JSON file + SQLite table so
+  you can enumerate allowed providers/models and switch the active adapter at
+  runtime.
+- Adapter abstraction (`llm.service`, `llm.adapters.*`) that lets you plug in
+  additional providers without touching the API or persistence layers.
+- Out-of-the-box Ollama support using the official Python SDK, configurable via
+  environment variables (`OLLAMA_BASE_URL`, `OLLAMA_API_KEY`).
+- Persistence powered by SQLAlchemy + Flask-Migrate, with SQLite as the default
+  backend but swappable for Postgres/MySQL by changing `DATABASE_URL`.
 
-### Conversational interface
+## Roadmap
 
-Provides an API interface which allows the caller to interact with the LLM.
-The API should also accept a session(cookie) identifier of some sort so that the user can run multiple isolated chats in parallel.
-
-### Persistance of chats (WIP)
-
-The system also persists data in a local DB (maybe extend to also include a cloud-hosted DB?) with conversation details -> **TO BE DESIGNED**
-
-### Controlled local knowledge access
-
-The system allows the user to define the documents that are available for the LLM when building a response.
-The user should explicitly select files/folders that are allowed to be accessed by the LLM.
-**TODO: Think about indexing/sharding for performance optimization**
-
-### Implement Retreival-augmented generation
-
-Has a RAG pipeline that enhances(augments) user's queries with the relevant context from allowed documents.
-With this larger context LLM should generate better responses, while prioritizing this retreived context over it's trained knoweldge.
-The System is also available of referencing the source files where the LLM got the information for it's responses.
-
-### Plugable backend apapters
-
-The system has a plugable backend so that there is possible swapping of local/cloud-hosted models.
+- Document selection, ingestion, and embedding storage for Retrieval-Augmented
+  Generation (RAG).
+- Embedding API in the Ollama adapter and downstream storage/retrieval logic.
+- Authorization/header management for remote LLM hosts.
+- Structured logging, rate limiting, and additional error handling once more
+  clients/providers are added.
 
 ## Getting started
 

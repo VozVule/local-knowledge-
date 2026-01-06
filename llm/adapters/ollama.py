@@ -22,6 +22,7 @@ class OllamaAdapter(LLMAdapter):
         self.chat_model = chat_model
         self.embedding_model = embedding_model
         self._client = Client(host=base_url)
+        # TODO: Surface a way to inject custom headers/API keys for remote hosts.
 
     """Call the configured Ollama chat model with full history and returns the response."""
     def chat(self, messages: List[ChatMessage], stream: bool = False) -> ChatMessage:
@@ -43,7 +44,7 @@ class OllamaAdapter(LLMAdapter):
         )
 
     def embed(self, texts: List[str]) -> List[List[float]]:
-        """TODO: Call embedding endpoint."""
+        # TODO: Call embedding endpoint once the RAG pipeline is ready.
         raise NotImplementedError("embed not implemented yet")
     
     def _convert_messages(self, messages: List[ChatMessage]) -> List[Dict[str, str]]:
