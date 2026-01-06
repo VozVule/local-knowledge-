@@ -1,7 +1,7 @@
 """High-level LLM service that delegates to provider adapters."""
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import List
 
 from llm.base import LLMAdapter
 from models import ChatMessage

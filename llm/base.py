@@ -2,9 +2,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List
+from typing import List
 from models import ChatMessage
 
+
+class LLMError(Exception):
+    """Represents failures raised by any LLM adapter."""
+
+    pass
 
 class LLMAdapter(ABC):
     """Defines the expected LLM operations for adapters."""

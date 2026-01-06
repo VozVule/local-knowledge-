@@ -11,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from config_loader import LLMConfig
 from llm.adapters.ollama import OllamaAdapter
+from llm.base import LLMError
 from llm.service import LLMService
 from models import AppConfig, ChatMessage, Sender, db
 
@@ -140,7 +141,11 @@ def send_chat_message():
     messages = get_chat_for_session(session_id)
     record = ChatMessage(session_id=session_id, sender=Sender.USER, message=message)
     messages.append(record)
-    reply_message = llm_service.chat(messages=messages)
+    try:
+        reply_message = llm_service.chat(messages=messages)
+    except LLMError as exc:
+        app.logger.error("LLM chat failed for session %s: %s", session_id, exc)
+        return jsonify({"error": "llm_unavailable", "message": "The language model is unavailable."}), 502
 
     try:
         db.session.add(record)

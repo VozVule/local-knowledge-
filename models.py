@@ -23,7 +23,7 @@ def _utcnow() -> datetime:
 
 class ChatMessage(db.Model):
     __tablename__ = "messages"
-    __tableargs__ = {
+    __table_args__ = {
         db.Index("idx_messages_session_id_timestamp", "session_id", "timestamp"),
     }
 
