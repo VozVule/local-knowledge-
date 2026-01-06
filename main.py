@@ -22,6 +22,7 @@ DEFAULT_DB_PATH = os.path.join(BASE_DIR, "lockno.db")
 load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{DEFAULT_DB_PATH}")
 CONFIG_PATH = os.getenv("LOCKNO_CONFIG", os.path.join(BASE_DIR, "config.json"))
+OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 llm_config = LLMConfig(CONFIG_PATH)
 PROVIDER_CONFIG = llm_config.providers
@@ -56,7 +57,7 @@ def create_adapter(
             raise RuntimeError("Ollama model missing in config")
         resolved_embedding = (embedding_model or resolved_model).strip()
         adapter = OllamaAdapter(
-            base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            base_url=OLLAMA_BASE_URL,
             chat_model=resolved_model,
             embedding_model=resolved_embedding,
         )

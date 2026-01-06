@@ -4,7 +4,7 @@ from __future__ import annotations
 import logging
 from typing import Dict, List
 
-from ollama import chat, ChatResponse
+from ollama import ChatResponse, Client
 
 from llm.base import LLMAdapter, LLMError
 from models import ChatMessage, Sender
@@ -21,11 +21,12 @@ class OllamaAdapter(LLMAdapter):
         self.base_url = base_url
         self.chat_model = chat_model
         self.embedding_model = embedding_model
+        self._client = Client(host=base_url)
 
     """Call the configured Ollama chat model with full history and returns the response."""
     def chat(self, messages: List[ChatMessage], stream: bool = False) -> ChatMessage:
         try:
-            response: ChatResponse = chat(
+            response: ChatResponse = self._client.chat(
                 model=self.chat_model,
                 stream=stream,
                 messages=self._convert_messages(messages),
