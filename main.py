@@ -10,10 +10,15 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from config_loader import LLMConfig
+from document_utils import (
+    DocumentUploadError,
+    extract_upload_from_request,
+    prepare_document_payload,
+)
 from llm.adapters.ollama import OllamaAdapter
 from llm.base import LLMError
 from llm.service import LLMService
-from models import AppConfig, ChatMessage, Sender, db
+from models import AppConfig, ChatMessage, Document, Sender, db
 
 
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -210,6 +215,49 @@ def set_llm_config():
 
     llm_service.set_adapter(new_adapter)
     return jsonify({"provider": provider, "model_name": model_name})
+
+
+@app.post("/api/documents")
+def create_document():
+    try:
+        upload = extract_upload_from_request(request.files.get("file"))
+        document_payload = prepare_document_payload(upload)
+    except DocumentUploadError as exc:
+        return jsonify({"error": str(exc)}), exc.status_code
+
+    document = Document(**document_payload)
+    try:
+        db.session.add(document)
+        db.session.commit()
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        app.logger.error("Failed to store document: %s", exc)
+        return jsonify({"error": "failed to store document"}), 500
+
+    return jsonify(document.to_dict()), 201
+
+
+@app.get("/api/documents")
+def list_documents():
+    documents = Document.query.order_by(Document.created_at.desc()).all()
+    return jsonify([doc.to_dict() for doc in documents])
+
+
+@app.delete("/api/documents/<int:document_id>")
+def delete_document(document_id: int):
+    document = Document.query.get(document_id)
+    if document is None:
+        return jsonify({"error": "document not found"}), 404
+
+    try:
+        db.session.delete(document)
+        db.session.commit()
+    except SQLAlchemyError as exc:
+        db.session.rollback()
+        app.logger.error("Failed to delete document %s: %s", document_id, exc)
+        return jsonify({"error": "failed to delete document"}), 500
+
+    return jsonify({"status": "deleted", "id": document_id})
 
 
 def get_chat_for_session(session_id: str) -> list[ChatMessage]:

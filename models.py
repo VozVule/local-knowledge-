@@ -58,3 +58,25 @@ class AppConfig(db.Model):
             "model_name": self.model_name,
             "model_type": self.model_type,
         }
+
+
+class Document(db.Model):
+    __tablename__ = "documents"
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    filename = db.Column(db.String(255), nullable=False)
+    mime_type = db.Column(db.String(128), nullable=False)
+    size_bytes = db.Column(db.Integer, nullable=False)
+    checksum = db.Column(db.String(128), nullable=True)
+    storage_data = db.Column(db.LargeBinary, nullable=False)
+    created_at = db.Column(db.DateTime(timezone=True), nullable=False, default=_utcnow)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "filename": self.filename,
+            "mime_type": self.mime_type,
+            "size_bytes": self.size_bytes,
+            "checksum": self.checksum,
+            "created_at": self.created_at.isoformat() if self.created_at else None,
+        }
